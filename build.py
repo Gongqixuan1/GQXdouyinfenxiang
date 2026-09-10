@@ -1,46 +1,41 @@
 #!/usr/bin/env python3
 import re, urllib.request
 
-# 1. 下载基础模板
 url = "https://raw.githubusercontent.com/Gongqixuan1/rongrong-portfolio/backup-before-interactive-features/index.html"
 html = urllib.request.urlopen(url).read().decode('utf-8')
 print(f"Downloaded: {len(html)} bytes")
 
-# 2. 导航栏删除 TIME MAP / PROJECTS / CONTACT
+m = re.search(r'(<div class="quote journey-quote">.*?</div></div>)</div></section>', html, re.DOTALL)
+quote_html = m.group(1)
+m2 = re.search(r'(<div class="works">.*?</div></div>)</div></section>', html, re.DOTALL)
+works_html = m2.group(1)
+
 html = html.replace('<a href="#about">TIME MAP</a>', '')
 html = html.replace('<a href="#projects">PROJECTS</a>', '')
 html = html.replace('<a href="#contact">CONTACT</a>', '')
-
-# 3. hero 删除 GRAD 卡片（含重庆科技大学）
 html = re.sub(r'<div class="fact"><label>GRAD</label><strong>2027</strong><small>重庆科技大学</small></div>', '', html)
-
-# 4. 删除整个 MY TIME MAP 板块
 html = re.sub(r'<section id="about"[^>]*>.*?</section>', '', html, flags=re.DOTALL)
-
-# 5. 实习经历公司名脱敏
 html = html.replace('重庆中瑞诚会计师事务所', '事务所')
 html = html.replace('招商银行重庆巴南支行', '银行')
 html = html.replace('深圳亿龙达信息技术有限公司', '跨境物流公司')
 html = html.replace('精准推荐重庆巴南支行', '精准推荐该银行')
 html = html.replace('重庆科技大学大学生创业助学基地', '某高校大学生创业助学基地')
-
-# 6. 删除整个项目经历板块（含封面作品集）
 html = re.sub(r'<section id="projects"[^>]*>.*?</section>', '', html, flags=re.DOTALL)
-
-# 7. 删除整个联系方式板块
 html = re.sub(r'<section id="contact"[^>]*>.*?</section>', '', html, flags=re.DOTALL)
-
-# 8. 重新编号
 html = html.replace('02 — INTERNSHIPS', '01 — INTERNSHIPS')
 html = html.replace('04 — COMPETITIONS', '02 — COMPETITIONS')
 html = html.replace('05 — SIDE ROLES', '03 — SIDE ROLES')
 html = html.replace('06 — SKILLS', '04 — SKILLS')
 
-# 9. 新增头脑风暴板块
+hero_end = html.find('</section>')
+html = html[:hero_end+10] + quote_html + html[hero_end+10:]
+internship_end = html.find('</section>', html.find('INTERNSHIPS'))
+works_section = '<section class="section soft"><div class="wrap">' + works_html + '</div></section>'
+html = html[:internship_end+10] + works_section + html[internship_end+10:]
+
 bs = '<section id="brainstorm" class="section soft"><div class="wrap"><div class="top"><div><div class="kicker">05 — BRAINSTORM</div><h2 class="title">宫启宣的头脑风暴</h2></div></div><p style="color:var(--muted);font-size:15px;margin-bottom:36px;">记录一些对生活中遇到的疑问！</p><div class="brainstorm-list"><a href="note-01.html" class="brainstorm-item"><div class="brainstorm-no">疑问 01</div><h3>抖音的小程序游戏是怎么盈利的</h3><span class="brainstorm-arrow">→ 查看笔记</span></a></div></div></section>'
 html = html.replace('</main>', bs + '</main>')
 
-# 10. 头脑风暴 CSS
 css = '''
 .brainstorm-list{display:flex;flex-direction:column;gap:14px}
 .brainstorm-item{display:block;background:#fff;border:1px solid var(--line);padding:24px 28px;transition:.25s;text-decoration:none;color:inherit}
@@ -55,10 +50,9 @@ html = html.replace('</style>', css + '</style>')
 with open('index.html', 'w', encoding='utf-8') as f:
     f.write(html)
 print(f"index.html: {len(html)} bytes")
-print(f"  about={html.count('id=\"about\"')} projects={html.count('id=\"projects\"')} contact={html.count('id=\"contact\"')}")
-print(f"  brainstorm={html.count('id=\"brainstorm\"')} 大学={html.count('重庆科技大学')}")
+print(f"quote={html.count('journey-quote')} works={html.count('class=\"works\"')}")
+print(f"大学={html.count('重庆科技大学')}")
 
-# 11. 生成笔记页 note-01.html
 note = '''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>抖音小程序游戏怎么盈利 · 宫启宣的头脑风暴</title><style>
 @import url("https://fonts.googleapis.com/css2?family=Zhi+Mang+Xing&display=swap");
 :root{--ink:#0b1f3a;--orange:#e75480;--blue:#4c6fff;--pink:#f5a9c5;--yellow:#ffd86b;--cream:#fff9f1;--paper:#f7f8fa;--muted:#66758a;--line:#e3e7ed}
