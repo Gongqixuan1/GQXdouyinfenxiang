@@ -1,0 +1,31 @@
+name: Copy Portfolio Images
+on:
+  push:
+    paths:
+      - '.copy-images-trigger'
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download images from original repo
+        run: |
+          for i in 01 02 03 04 05 06 07 08; do
+            curl -sL -o "cover-$i.jpg" "https://raw.githubusercontent.com/Gongqixuan1/rongrong-portfolio/backup-before-interactive-features/cover-$i.jpg"
+            echo "cover-$i.jpg: $(wc -c < cover-$i.jpg) bytes"
+          done
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cover-*.jpg
+          git commit -m "feat: add portfolio cover images" || echo "nothing to commit"
+          git push
+      - name: Cleanup
+        run: |
+          rm -f .copy-images-trigger
+          git add .copy-images-trigger
+          git commit -m "chore: cleanup" || true
+          git push || true
