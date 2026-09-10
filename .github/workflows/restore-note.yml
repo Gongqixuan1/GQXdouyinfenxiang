@@ -1,0 +1,25 @@
+name: Restore Note
+on:
+  push:
+    paths:
+      - '.restore-trigger'
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run restore script
+        run: python3 restore_note.py
+      - name: Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add note-01.html
+          git commit -m "fix: restore note original content"
+          git push
+          rm -f .restore-trigger
+          git add .restore-trigger
+          git commit -m "cleanup" || true
+          git push || true
