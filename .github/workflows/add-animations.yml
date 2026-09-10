@@ -1,0 +1,25 @@
+name: Add Animations
+on:
+  push:
+    paths:
+      - '.anim-trigger'
+jobs:
+  anim:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run script
+        run: python3 add_animations.py
+      - name: Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "feat: add number scroll animation and name handwriting effect"
+          git push
+          rm -f .anim-trigger
+          git add .anim-trigger
+          git commit -m "cleanup" || true
+          git push || true
