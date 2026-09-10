@@ -1,0 +1,48 @@
+name: Fix Avatar and Portfolio
+on:
+  push:
+    paths:
+      - '.fix-avatar-trigger'
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download avatar
+        run: |
+          curl -sL -o avatar.jpg "https://raw.githubusercontent.com/Gongqixuan1/rongrong-portfolio/backup-before-interactive-features/avatar.jpg"
+          ls -la avatar.jpg
+      - name: Fix portfolio position
+        run: |
+          python3 << 'PYEOF'
+import re
+with open('index.html', 'r', encoding='utf-8') as f:
+    html = f.read()
+# 提取作品集
+works_match = re.search(r'(<section class="section soft"><div class="wrap"><div class="works">.*?</div></div></section>)', html, re.DOTALL)
+if works_match:
+    works = works_match.group(1)
+    html = html.replace(works, '')
+    # 插入到实习经历后面
+    exp_end = html.find('</section>', html.find('id="experience"'))
+    if exp_end > 0:
+        html = html[:exp_end+10] + works + html[exp_end+10:]
+        print("作品集位置已修复")
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+PYEOF
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add avatar.jpg index.html
+          git commit -m "fix: add avatar and fix portfolio position"
+          git push
+      - name: Cleanup
+        run: |
+          rm -f .fix-avatar-trigger
+          git add .fix-avatar-trigger
+          git commit -m "chore: cleanup" || true
+          git push || true
