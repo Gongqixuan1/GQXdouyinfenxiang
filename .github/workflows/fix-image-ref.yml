@@ -1,0 +1,34 @@
+name: Fix Image References
+on:
+  push:
+    paths:
+      - '.fix-ref-trigger'
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update image references in HTML
+        run: |
+          sed -i 's/climbing\.jpg/climbing1.jpg/g' index.html
+          sed -i 's/childcare\.png/teacher.png/g' index.html
+          sed -i 's/designer\.jpg/design.jpg/g' index.html
+          echo "=== 验证替换结果 ==="
+          grep -c 'climbing1.jpg' index.html
+          grep -c 'teacher.png' index.html
+          grep -c 'design.jpg' index.html
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: update image references to user uploaded files" || echo "nothing to commit"
+          git push
+      - name: Cleanup
+        run: |
+          rm -f .fix-ref-trigger
+          git add .fix-ref-trigger
+          git commit -m "chore: cleanup" || true
+          git push || true
