@@ -360,7 +360,7 @@ main .section.section-flash{background:rgba(231,84,128,.045)}
 <style>
 /* 名字手写体悬停效果 */
 h1 {
-  transition: font-family 0.3s ease;
+  transition: font-family 0.8s ease;
 }
 h1:hover {
   font-family: "Ma Shan Zheng", "Zhi Mang Xing", "楷体", "华文行楷", cursive;
@@ -793,7 +793,7 @@ h1:hover {
 (function() {
   function animateNumber(el) {
     var target = parseInt(el.getAttribute('data-target'), 10);
-    var duration = 1500;
+    var duration = 2500;
     var startTime = null;
     function step(timestamp) {
       if (!startTime) startTime = timestamp;
@@ -814,7 +814,7 @@ h1:hover {
     entries.forEach(function(entry) {
       if (entry.isIntersecting) {
         animateNumber(entry.target);
-        observer.unobserve(entry.target);
+        // 每次进入都重新动画，不取消观察
       }
     });
   }, { threshold: 0.5 });
