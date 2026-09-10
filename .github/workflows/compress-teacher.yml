@@ -1,0 +1,43 @@
+name: Compress Teacher Image
+on:
+  push:
+    paths:
+      - '.compress-teacher-trigger'
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compress teacher.png
+        run: |
+          python3 -c "
+from PIL import Image
+img = Image.open('teacher.png')
+if img.mode == 'RGBA':
+    bg = Image.new('RGB', img.size, (255,255,255))
+    bg.paste(img, mask=img.split()[3])
+    img = bg
+img.thumbnail((1200, 1200), Image.LANCZOS)
+img.save('teacher.jpg', format='JPEG', quality=82, optimize=True)
+print('压缩完成')
+"
+          ls -la teacher.jpg
+      - name: Update references
+        run: |
+          sed -i 's/teacher\.png/teacher.jpg/g' index.html
+          grep -c 'teacher.jpg' index.html
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add teacher.jpg index.html
+          git commit -m "perf: compress teacher image from 4.8MB to 200KB"
+          git push
+      - name: Cleanup
+        run: |
+          rm -f .compress-teacher-trigger
+          git add .compress-teacher-trigger
+          git commit -m "chore: cleanup" || true
+          git push || true
