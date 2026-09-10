@@ -1,0 +1,34 @@
+name: Fix V3
+on:
+  push:
+    paths:
+      - '.fixv3-trigger'
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Update teacher reference and restore note
+        run: |
+          # 更新teacher引用
+          sed -i 's/teacher\.png/teachernew.jpg/g' index.html
+          echo "teacher引用已更新"
+          # 恢复笔记原版（上一个commit的版本）
+          git show HEAD~1:note-01.html > note-01.html
+          echo "笔记已恢复原版"
+          wc -c note-01.html
+      - name: Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html note-01.html
+          git commit -m "fix: update teacher to teachernew and restore note original"
+          git push
+          rm -f .fixv3-trigger
+          git add .fixv3-trigger
+          git commit -m "cleanup" || true
+          git push || true
