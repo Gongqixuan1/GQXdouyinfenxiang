@@ -1,0 +1,99 @@
+name: Comprehensive Fix
+on:
+  push:
+    paths:
+      - '.comprehensive-fix-trigger'
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download avatar from original repo
+        run: |
+          curl -sL -o avatar.jpg "https://raw.githubusercontent.com/Gongqixuan1/rongrong-portfolio/backup-before-interactive-features/avatar.jpg"
+          echo "avatar.jpg: $(wc -c < avatar.jpg) bytes"
+      - name: Download and compress teacher image
+        run: |
+          curl -sL -o /tmp/teacher_orig.png "https://aka.doubaocdn.com/s/MNi8z0gtIB"
+          echo "teacher原始: $(wc -c < /tmp/teacher_orig.png) bytes"
+          python3 -c "
+from PIL import Image
+import io
+img = Image.open('/tmp/teacher_orig.png')
+if img.mode == 'RGBA':
+    bg = Image.new('RGB', img.size, (255,255,255))
+    bg.paste(img, mask=img.split()[3])
+    img = bg
+img.thumbnail((1200, 1200), Image.LANCZOS)
+img.save('teacher.jpg', format='JPEG', quality=82, optimize=True)
+print('teacher压缩完成')
+"
+          echo "teacher.jpg: $(wc -c < teacher.jpg) bytes"
+      - name: Fix portfolio position and update references
+        run: |
+          python3 << 'PYEOF'
+import re
+
+with open('index.html', 'r', encoding='utf-8') as f:
+    html = f.read()
+
+# 1. 修复作品集位置：从hero后面移到实习经历后面
+# 提取作品集section
+works_match = re.search(r'(<section class="section soft"><div class="wrap"><div class="works">.*?</div></div></section>)', html, re.DOTALL)
+if works_match:
+    works_section = works_match.group(1)
+    # 从原位置删除
+    html = html.replace(works_section, '')
+    # 插入到实习经历后面
+    exp_end = html.find('</section>', html.find('id="experience"'))
+    if exp_end > 0:
+        html = html[:exp_end+10] + works_section + html[exp_end+10:]
+        print("作品集位置已修复")
+    else:
+        print("未找到实习经历结束位置")
+else:
+    print("未找到作品集section")
+
+# 2. 更新teacher引用为teacher.jpg
+html = html.replace('teacher.png', 'teacher.jpg')
+print("teacher引用已更新")
+
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(html)
+print(f"index.html: {len(html)} bytes")
+PYEOF
+      - name: Add note1 image to note page
+        run: |
+          python3 << 'PYEOF'
+with open('note-01.html', 'r', encoding='utf-8') as f:
+    note = f.read()
+
+# 在笔记标题下面插入图片
+img_tag = '<div style="text-align:center;margin:20px 0 30px;"><img src="note1.png" alt="笔记配图" style="max-width:100%;height:auto;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);"></div>'
+
+# 在note-meta后面插入
+if 'note-meta' in note:
+    note = note.replace('</div>\n<div class="note-body">', '</div>\n' + img_tag + '\n<div class="note-body">')
+    print("笔记图片已插入")
+else:
+    print("未找到插入位置")
+
+with open('note-01.html', 'w', encoding='utf-8') as f:
+    f.write(note)
+print(f"note-01.html: {len(note)} bytes")
+PYEOF
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add avatar.jpg teacher.jpg index.html note-01.html
+          git commit -m "fix: add avatar, compress teacher, fix portfolio position, add note image" || echo "nothing to commit"
+          git push
+      - name: Cleanup
+        run: |
+          rm -f .comprehensive-fix-trigger
+          git add .comprehensive-fix-trigger
+          git commit -m "chore: cleanup" || true
+          git push || true
