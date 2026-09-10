@@ -1,0 +1,25 @@
+name: Adjust Anim
+on:
+  push:
+    paths:
+      - '.adj-trigger'
+jobs:
+  adj:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run script
+        run: python3 adjust_anim.py
+      - name: Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "perf: slow down handwriting and number animation, retrigger on scroll"
+          git push
+          rm -f .adj-trigger
+          git add .adj-trigger
+          git commit -m "cleanup" || true
+          git push || true
